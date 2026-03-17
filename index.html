@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading AI — Agentes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --bg2: #111318;
+    --bg3: #181c23;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #7a7f8e;
+    --text3: #4a4f5e;
+    --green: #00e5a0;
+    --green-dim: rgba(0,229,160,0.12);
+    --green-dim2: rgba(0,229,160,0.06);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --blue: #4da6ff;
+    --blue-dim: rgba(77,166,255,0.12);
+    --red: #ff5f5f;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .topbar-logo {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-logo::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .topbar-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+  }
+  .topbar-market {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .market-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+  .market-pill.up { color: var(--green); border-color: rgba(0,229,160,0.3); background: var(--green-dim2); }
+  .market-pill.down { color: var(--red); border-color: rgba(255,95,95,0.3); background: rgba(255,95,95,0.06); }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    padding: 16px 0;
+  }
+  .sidebar-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    padding: 0 16px 10px;
+    text-transform: uppercase;
+  }
+  .agent-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    position: relative;
+  }
+  .agent-btn:hover { background: var(--bg3); }
+  .agent-btn.active { background: var(--bg3); }
+  .agent-btn.active.journal { border-left-color: var(--green); }
+  .agent-btn.active.options { border-left-color: var(--amber); }
+  .agent-btn.active.risk { border-left-color: var(--blue); }
+
+  .agent-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .journal .agent-icon { background: var(--green-dim); }
+  .options .agent-icon { background: var(--amber-dim); }
+  .risk .agent-icon { background: var(--blue-dim); }
+
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .agent-sub {
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  .unread {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 16px;
+  }
+  .sidebar-tip {
+    padding: 10px 14px;
+    margin: 4px 12px;
+    background: var(--green-dim2);
+    border: 1px solid rgba(0,229,160,0.15);
+    border-radius: 6px;
+  }
+  .sidebar-tip p {
+    font-size: 10px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .sidebar-tip strong { color: var(--green); font-weight: 600; }
+
+  /* CHAT AREA */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .chat-panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+  }
+  .chat-panel.active { display: flex; }
+
+  /* CHAT HEADER */
+  .chat-header {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+  .chat-header-left { display: flex; align-items: center; gap: 12px; }
+  .chat-header-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .journal-header .chat-header-icon { background: var(--green-dim); }
+  .options-header .chat-header-icon { background: var(--amber-dim); }
+  .risk-header .chat-header-icon { background: var(--blue-dim); }
+
+  .chat-header-title { font-size: 15px; font-weight: 700; }
+  .chat-header-sub { font-size: 11px; color: var(--text2); margin-top: 1px; font-family: var(--font-mono); }
+  .clear-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover { color: var(--text2); border-color: var(--border2); }
+
+  /* MESSAGES */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg { display: flex; gap: 10px; align-items: flex-start; animation: fadeUp 0.2s ease; }
+  .msg.user { flex-direction: row-reverse; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg-avatar.agent-j { background: var(--green-dim); }
+  .msg-avatar.agent-o { background: var(--amber-dim); }
+  .msg-avatar.agent-r { background: var(--blue-dim); }
+  .msg-avatar.user { background: var(--bg3); color: var(--text2); font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 10px;
+    max-width: 75%;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .bubble.agent {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px 10px 10px 3px;
+  }
+  .bubble.user {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: 10px 10px 3px 10px;
+  }
+  .bubble.thinking {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .bubble.thinking::after {
+    content: '...';
+    animation: dots 1.2s infinite;
+  }
+  @keyframes dots {
+    0%,20% { content: '.'; }
+    40% { content: '..'; }
+    60%,100% { content: '...'; }
+  }
+
+  /* CHIPS */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 24px 10px;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 5px 11px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .chip:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+  .chip.j:hover { border-color: rgba(0,229,160,0.4); color: var(--green); }
+  .chip.o:hover { border-color: rgba(245,166,35,0.4); color: var(--amber); }
+  .chip.r:hover { border-color: rgba(77,166,255,0.4); color: var(--blue); }
+
+  /* INPUT */
+  .input-area {
+    padding: 12px 24px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 6px 6px 6px 14px;
+    transition: border-color 0.15s;
+  }
+  .input-row:focus-within { border-color: rgba(255,255,255,0.2); }
+  .input-row input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 13px;
+    outline: none;
+  }
+  .input-row input::placeholder { color: var(--text3); }
+  .send-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .journal-panel .send-btn { background: var(--green); }
+  .journal-panel .send-btn:hover:not(:disabled) { background: #00c98a; }
+  .options-panel .send-btn { background: var(--amber); }
+  .options-panel .send-btn:hover:not(:disabled) { background: #d98f1a; }
+  .risk-panel .send-btn { background: var(--blue); }
+  .risk-panel .send-btn:hover:not(:disabled) { background: #3a90e0; }
+  .input-hint {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text3);
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  /* GRID PATTERN BG */
+  .chat-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .chat-panel { position: relative; z-index: 1; }
+
+  /* API KEY MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 420px;
+    max-width: 90vw;
+  }
+  .modal h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--green);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+  .modal p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 18px; }
+  .modal input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    letter-spacing: 0.03em;
+    margin-bottom: 14px;
+  }
+  .modal input:focus { border-color: rgba(0,229,160,0.4); }
+  .modal-btn {
+    width: 100%;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 11px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-btn:hover { background: #00c98a; }
+  .modal-note {
+    font-size: 10px;
+    color: var(--text3);
+    text-align: center;
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    line-height: 1.5;
+  }
+  .modal-note a { color: var(--green); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>// TRADING AI</h2>
+    <p>Ingresa tu API Key de Anthropic para activar los 3 agentes. La clave se guarda solo en tu navegador y nunca se envía a ningún servidor externo.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+    <button class="modal-btn" onclick="saveApiKey()">ACTIVAR AGENTES →</button>
+    <p class="modal-note">
+      Obtén tu key en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+      Tu key se guarda en localStorage de este navegador
+    </p>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">TRADING AI</div>
+  <div class="topbar-date" id="topbarDate"></div>
+  <div class="topbar-market">
+    <span class="market-pill up">SPX +0.07%</span>
+    <span class="market-pill down">NDX -0.01%</span>
+    <span class="market-pill">VIX 23.36</span>
+    <span class="market-pill down">WTI $96.14</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-label">Agentes</div>
+
+    <div class="agent-btn journal active" onclick="switchAgent('journal')">
+      <div class="agent-icon">📝</div>
+      <div class="agent-info">
+        <div class="agent-name">Journal</div>
+        <div class="agent-sub">Revisión de trades</div>
+      </div>
+      <div class="unread" id="unread-journal" style="display:none"></div>
+    </div>
+
+    <div class="agent-btn options" onclick="switchAgent('options')">
+      <div class="agent-icon">📈</div>
+      <div class="agent-info">
+        <div class="agent-name">Opciones</div>
+        <div class="agent-sub">Griegas · IV · Estrategias</div>
+      </div>
+      <div class="unread" id="unread-options" style="display:none"></div>
+    </div>
+
+    <div class="agent-btn risk" onclick="switchAgent('risk')">
+      <div class="agent-icon">🎯</div>
+      <div class="agent-info">
+        <div class="agent-name">Riesgo</div>
+        <div class="agent-sub">Position sizing · R:R</div>
+      </div>
+      <div class="unread" id="unread-risk" style="display:none"></div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-tip">
+      <p><strong>Tip del día</strong><br>VIX en 23.36 — reduce tu position size un 25% hoy. FOMC mañana.</p>
+    </div>
+
+    <div style="margin-top: auto; padding: 12px 16px;">
+      <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 0.06em; line-height: 1.6;">
+        POWERED BY<br>
+        <span style="color: var(--text2);">CLAUDE API</span>
+      </div>
+      <button class="clear-btn" style="margin-top:8px; width:100%;" onclick="changeApiKey()">CAMBIAR API KEY</button>
+    </div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area">
+
+    <!-- JOURNAL PANEL -->
+    <div class="chat-panel journal-panel active" id="panel-journal">
+      <div class="chat-header journal-header">
+        <div class="chat-header-left">
+          <div class="chat-header-icon">📝</div>
+          <div>
+            <div class="chat-header-title">Journal de Trades</div>
+            <div class="chat-header-sub">registra · analiza · aprende</div>
+          </div>
+        </div>
+        <button class="clear-btn" onclick="clearChat('journal')">LIMPIAR</button>
+      </div>
+      <div class="messages" id="msgs-journal"></div>
+      <div class="chips" id="chips-journal">
+        <span class="chip j" onclick="useChip('journal', this)">Registrar trade de hoy</span>
+        <span class="chip j" onclick="useChip('journal', this)">Analizar mi peor trade</span>
+        <span class="chip j" onclick="useChip('journal', this)">¿Cuáles son mis errores?</span>
+        <span class="chip j" onclick="useChip('journal', this)">Revisar semana</span>
+      </div>
+      <div class="input-area">
+        <div class="input-row">
+          <input id="input-journal" type="text" placeholder="Describe tu trade del día..." onkeydown="if(event.key==='Enter')sendMsg('journal')" />
+          <button class="send-btn" id="btn-journal" onclick="sendMsg('journal')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 8M14 8L9 3M14 8L9 13" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">ENTER para enviar · historial guardado en sesión</div>
+      </div>
+    </div>
+
+    <!-- OPTIONS PANEL -->
+    <div class="chat-panel options-panel" id="panel-options">
+      <div class="chat-header options-header">
+        <div class="chat-header-left">
+          <div class="chat-header-icon">📈</div>
+          <div>
+            <div class="chat-header-title">Analista de Opciones</div>
+            <div class="chat-header-sub">griegas · IV rank · estrategias · flujo</div>
+          </div>
+        </div>
+        <button class="clear-btn" onclick="clearChat('options')">LIMPIAR</button>
+      </div>
+      <div class="messages" id="msgs-options"></div>
+      <div class="chips" id="chips-options">
+        <span class="chip o" onclick="useChip('options', this)">Iron condor paso a paso</span>
+        <span class="chip o" onclick="useChip('options', this)">¿Cuándo vender premium?</span>
+        <span class="chip o" onclick="useChip('options', this)">IV Rank de NVDA hoy</span>
+        <span class="chip o" onclick="useChip('options', this)">Call debit vs credit spread</span>
+        <span class="chip o" onclick="useChip('options', this)">Leer la cadena de opciones</span>
+      </div>
+      <div class="input-area">
+        <div class="input-row">
+          <input id="input-options" type="text" placeholder="Pregunta sobre opciones, ticker o estrategia..." onkeydown="if(event.key==='Enter')sendMsg('options')" />
+          <button class="send-btn" id="btn-options" onclick="sendMsg('options')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 8M14 8L9 3M14 8L9 13" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">ENTER para enviar · historial guardado en sesión</div>
+      </div>
+    </div>
+
+    <!-- RISK PANEL -->
+    <div class="chat-panel risk-panel" id="panel-risk">
+      <div class="chat-header risk-header">
+        <div class="chat-header-left">
+          <div class="chat-header-icon">🎯</div>
+          <div>
+            <div class="chat-header-title">Calculadora de Riesgo</div>
+            <div class="chat-header-sub">position sizing · R:R · drawdown</div>
+          </div>
+        </div>
+        <button class="clear-btn" onclick="clearChat('risk')">LIMPIAR</button>
+      </div>
+      <div class="messages" id="msgs-risk"></div>
+      <div class="chips" id="chips-risk">
+        <span class="chip r" onclick="useChip('risk', this)">Calcular mi position size</span>
+        <span class="chip r" onclick="useChip('risk', this)">¿Cuánto riesgo por trade?</span>
+        <span class="chip r" onclick="useChip('risk', this)">Revisar mi R:R</span>
+        <span class="chip r" onclick="useChip('risk', this)">Reglas de drawdown máximo</span>
+      </div>
+      <div class="input-area">
+        <div class="input-row">
+          <input id="input-risk" type="text" placeholder="Ej: capital $10,000 · entrada $150 · stop $147 · target $156" onkeydown="if(event.key==='Enter')sendMsg('risk')" />
+          <button class="send-btn" id="btn-risk" onclick="sendMsg('risk')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 8M14 8L9 3M14 8L9 13" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">ENTER para enviar · historial guardado en sesión</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────
+const SYSTEMS = {
+  journal: `Eres un agente especializado en journal de trading para day traders de acciones y opciones en el mercado americano.
+
+Tu trabajo es ayudar al trader a:
+1. Registrar trades de forma estructurada (ticker, dirección, entrada, stop, target, resultado, emoción)
+2. Analizar qué salió bien y qué falló en cada trade con honestidad
+3. Identificar patrones de error repetidos (FOMO, salir antes de tiempo, sobreoperar, revenge trading)
+4. Dar feedback directo y constructivo, sin suavizar errores
+
+Cuando el usuario describa un trade, extrae y confirma: ticker, largo/corto, entrada, stop usado, target, resultado real, y cómo se sintió. Si falta info, pide solo lo esencial.
+
+Responde en español. Sé directo y concreto. Usa formato claro con saltos de línea. Máximo 150 palabras salvo análisis detallado.`,
+
+  options: `Eres un analista experto en opciones del mercado americano, especializado en day trading y swing trading.
+
+Dominas:
+- Las griegas: Delta, Gamma, Theta, Vega con aplicación práctica real
+- Volatilidad implícita (IV), IV Rank, IV Percentile
+- Lectura de cadena de opciones: OI, volumen, bid/ask, flujo institucional
+- Estrategias: calls/puts direccionales, debit spreads, credit spreads, iron condors, straddles, covered calls
+- Cuándo comprar vs vender premium según condiciones
+
+El usuario tiene experiencia básica-intermedia. Usa ejemplos con números reales. Cuando des una estrategia menciona siempre: cuándo usarla, riesgo máximo y beneficio máximo.
+
+Responde en español con formato claro. Máximo 150 palabras salvo análisis detallado.`,
+
+  risk: `Eres una calculadora experta de gestión de riesgo para day traders.
+
+Calculas con precisión:
+1. Position sizing: shares o contratos dado capital y riesgo por trade
+2. Riesgo en dólares y % del capital
+3. Ratio R:R y si el trade vale la pena
+4. Límites de pérdida diaria/semanal recomendados
+
+Fórmula: Shares = (Capital × %Riesgo) / (Entrada - Stop)
+Para opciones: 1 contrato = 100 acciones.
+
+Cuando el usuario dé datos, calcula inmediatamente con números exactos y claros. Si faltan datos, pide solo: capital total, entrada y stop loss.
+
+Responde en español. Formato limpio con los números destacados. Máximo 100 palabras.`
+};
+
+const histories = { journal: [], options: [], risk: [] };
+const WELCOME = {
+  journal: '¡Hola! Soy tu Journal de Trading. Cuéntame tu último trade y lo diseccionamos juntos — entrada, salida, por qué lo tomaste y cómo terminó. Entre más detalle mejor.',
+  options: 'Soy tu analista de opciones. Dame un ticker, una estrategia que quieras entender, o pregúntame cualquier duda sobre griegas, IV o cómo leer una cadena. ¿Por dónde empezamos?',
+  risk: 'Soy tu calculadora de riesgo. Dame los datos de tu trade (capital, entrada, stop y opcionalmente target) y te digo exactamente cuántas acciones comprar y cuánto arriesgas en dólares.'
+};
+
+let apiKey = '';
+let currentAgent = 'journal';
+
+// ── INIT ────────────────────────────────────────────
+window.onload = () => {
+  updateDate();
+  setInterval(updateDate, 60000);
+
+  const saved = localStorage.getItem('trading_api_key');
+  if (saved) {
+    apiKey = saved;
+    document.getElementById('apiModal').style.display = 'none';
+    initChats();
+  }
+};
+
+function updateDate() {
+  const now = new Date();
+  const d = now.toLocaleDateString('es-CL', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+  const t = now.toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('topbarDate').textContent = `${d.toUpperCase()} · ${t}`;
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk-ant-') && !val.startsWith('sk-')) {
+    document.getElementById('apiKeyInput').style.borderColor = 'rgba(255,95,95,0.5)';
+    return;
+  }
+  apiKey = val;
+  localStorage.setItem('trading_api_key', val);
+  document.getElementById('apiModal').style.display = 'none';
+  initChats();
+}
+
+function changeApiKey() {
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiModal').style.display = 'flex';
+}
+
+function initChats() {
+  ['journal','options','risk'].forEach(agent => {
+    addMsg(agent, 'agent', WELCOME[agent]);
+  });
+}
+
+// ── NAVIGATION ──────────────────────────────────────
+function switchAgent(agent) {
+  currentAgent = agent;
+  document.querySelectorAll('.agent-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.agent-btn.${agent}`).classList.add('active');
+  document.querySelectorAll('.chat-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${agent}`).classList.add('active');
+  document.getElementById(`unread-${agent}`).style.display = 'none';
+  document.getElementById(`input-${agent}`).focus();
+}
+
+// ── CHAT ────────────────────────────────────────────
+function useChip(agent, el) {
+  document.getElementById(`input-${agent}`).value = el.textContent.trim();
+  sendMsg(agent);
+}
+
+function addMsg(agent, role, text) {
+  const msgs = document.getElementById(`msgs-${agent}`);
+  const icons = { journal:'📝', options:'📈', risk:'🎯' };
+  const avatarClass = { journal:'agent-j', options:'agent-o', risk:'agent-r' };
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = `msg-avatar ${role === 'agent' ? avatarClass[agent] : 'user'}`;
+  avatarDiv.textContent = role === 'agent' ? icons[agent] : 'TÚ';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+  bubble.innerHTML = text.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+
+  div.appendChild(avatarDiv);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addThinking(agent) {
+  const msgs = document.getElementById(`msgs-${agent}`);
+  const icons = { journal:'📝', options:'📈', risk:'🎯' };
+  const avatarClass = { journal:'agent-j', options:'agent-o', risk:'agent-r' };
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = `thinking-${agent}`;
+  div.innerHTML = `<div class="msg-avatar ${avatarClass[agent]}">${icons[agent]}</div><div class="bubble thinking">Analizando</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendMsg(agent) {
+  const input = document.getElementById(`input-${agent}`);
+  const btn = document.getElementById(`btn-${agent}`);
+  const text = input.value.trim();
+  if (!text || !apiKey) return;
+
+  input.value = '';
+  document.getElementById(`chips-${agent}`).style.display = 'none';
+  addMsg(agent, 'user', text);
+  histories[agent].push({ role: 'user', content: text });
+
+  btn.disabled = true;
+  addThinking(agent);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEMS[agent],
+        messages: histories[agent]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || (data.error?.message || 'Error al obtener respuesta.');
+    document.getElementById(`thinking-${agent}`)?.remove();
+    histories[agent].push({ role: 'assistant', content: reply });
+    addMsg(agent, 'agent', reply);
+
+    if (currentAgent !== agent) {
+      document.getElementById(`unread-${agent}`).style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById(`thinking-${agent}`)?.remove();
+    addMsg(agent, 'agent', 'Error de conexión. Verifica tu API key o intenta de nuevo.');
+  }
+  btn.disabled = false;
+}
+
+function clearChat(agent) {
+  histories[agent] = [];
+  document.getElementById(`msgs-${agent}`).innerHTML = '';
+  document.getElementById(`chips-${agent}`).style.display = 'flex';
+  addMsg(agent, 'agent', WELCOME[agent]);
+}
+</script>
+</body>
+</html>
