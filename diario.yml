@@ -1,0 +1,17 @@
+name: Ejecutar script diario
+
+on:
+  schedule:
+    - cron: "35 20 * * 1-5"   # 15:35 hora de Lima (20:35 UTC), lunes a viernes
+  workflow_dispatch:           # botón para ejecutarlo manualmente y probar
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt   # bórrala si no usas librerías
+      - run: python mi_script.py               # cambia por el nombre de tu archivo
